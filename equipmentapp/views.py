@@ -10,6 +10,12 @@ from django.http import HttpResponse
 #  Library to create session token
 from django.contrib.auth import login, logout, authenticate
 
+# Import the form created
+from .forms import TaskForm
+
+# import the task model
+from .models import Task
+
 # Create your views here.
 
 # Home Page
@@ -34,7 +40,7 @@ def signup(request):
                 )
                 user.save()
                 login(request, user)
-                return redirect("task")
+                return redirect("tasks")
             except:
                 return render(
                     request,
@@ -48,8 +54,9 @@ def signup(request):
         )
 
 
-def task(request):
-    return render(request, "task.html")
+def tasks(request):
+    tasks = Task.objects.filter(user=request.user)
+    return render(request, "tasks.html", {"tasks": tasks})
 
 
 def signout(request):
@@ -77,11 +84,27 @@ def signin(request):
             )
         else:
             login(request, user)
-            return redirect("task")
+            return redirect("tasks")
 
 
 def create_task(request):
-    return render(request, "create_task.html")
+    if request.method == "GET":
+        return render(request, "create_task.html", {"form": TaskForm})
+    else:
+        # print(request.POST)
+        try:
+            form = TaskForm(request.POST)
+            new_task = form.save(commit=False)
+            new_task.user = request.user
+            print(new_task)
+            new_task.save()
+            return redirect("tasks")
+        except ValueError:
+            return render(
+                request,
+                "create_task.html",
+                {"form": TaskForm, "error": "Please provide valid data"},
+            )
 
 
 # # Signup form from django
